@@ -1,0 +1,9 @@
+# General Python dependencies imported by the original research code.
+# Original package versions were not recorded; this is not a tested lock file.
+# jqdata and jqfactor are supplied by the JoinQuant platform, not by this file.
+numpy
+pandas
+scipy
+statsmodels
+matplotlib
+tqdm

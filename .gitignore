@@ -1,0 +1,42 @@
+# Local Python and notebook artifacts
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.pytest_cache/
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+secrets*.json
+# OS and editor temporary files
+.DS_Store
+Thumbs.db
+~$*
+*.tmp
+*.log
+# Download shortcuts and archived bundles
+*.url
+*.lnk
+*.zip
+*.7z
+*.rar
+# Raw / intermediate / holdings data: generate in an authorized environment
+数据/*
+!数据/README.md
+index_enhancement_raw*.csv
+factors4_processed*.csv
+factors5_score*.csv
+result_df*.csv
+*.pkl
+*.pickle
+*.parquet
+*.feather
+*.h5
+# Third-party research reports must not be redistributed
+参考研报/
+券商研报/
