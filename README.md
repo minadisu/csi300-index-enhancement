@@ -1,103 +1,80 @@
-# 沪深300指数增强策略研究
+# CSI 300 Index Enhancement: Dynamic Factor Selection and Stratified Sampling
 
-CSI 300 Index Enhancement · Dynamic Factor Selection & Stratified Sampling
+*A Python-based empirical study of benchmark-aware multi-factor equity selection in China's A-share market.*
 
-本项目以沪深300指数成分股为研究对象，通过多因子打分、动态因子筛选与行业—市值分层抽样构建增强组合，研究在控制组合相对基准偏离的同时获取超额收益的方法。
+This undergraduate quantitative finance project investigates whether dynamically selected stock characteristics can improve returns relative to the **CSI 300 Index**, while limiting unintended industry and market-capitalization exposures. The workflow combines cross-sectional factor research, rolling predictive-signal evaluation, stratified portfolio construction, turnover-aware rebalancing, and historical performance analysis.
 
-使用 Python 和聚宽（JoinQuant）研究环境，覆盖因子构建、数据预处理、组合构建、绩效评估及交易回测验证。
+> **Research status:** The metrics below are preserved from the original research notebook, **not independently rerun or verified during repository preparation**. This is an academic backtest, not a live trading record.
 
-**项目导航：** [研究笔记本](代码/指数增强策略.ipynb) · [交易回测代码](代码/沪深300指数增强回测代码.py) · [研究报告](实验报告/基于动态因子筛选与分层抽样的沪深300指数增强策略研究报告.pdf) · [数据说明](数据/README.md)
+## Key results — research notebook (V3)
 
-## 研究框架
+| Metric | Historical backtest |
+|:--|--:|
+| Period | Jan 29, 2010 – Jun 15, 2026 |
+| Rebalancing | Monthly |
+| Strategy annualized return | 6.58% |
+| CSI 300 annualized return | 2.62% |
+| Reported annualized excess return | **3.95%** |
+| Annualized tracking error | **3.82%** |
+| Information ratio | **0.99** |
+| Maximum portfolio drawdown | −38.95% |
+| Maximum relative drawdown | −4.05% |
+| Monthly excess-return win rate | 64.29% |
+| Average monthly turnover | 22.64% |
 
-1. **股票池构建**：按调仓日期获取沪深300成分股，过滤 ST、新上市及交易不活跃股票。
-2. **因子构建**：涵盖估值、盈利、成长、技术、波动率、流动性和规模等维度。
-3. **预处理**：进行缺失值处理、MAD 去极值、行业与市值中性化、标准化及对称正交。
-4. **动态筛选与加权**：结合滚动 Rank IC、ICIR 和 IC 正向占比筛选因子，形成综合得分。
-5. **组合构建**：按行业和市值分层选股，结合换手控制、个股权重限制和动态主动风险预算形成目标组合。
-6. **回测评估**：分别开展研究端月度回测与聚宽交易回测，分析收益、跟踪误差、信息比率、回撤和换手率。
+**Interpretation:** The reported annualized excess return is the difference between the strategy and benchmark annualized returns before rounding; it is **not** a claim of a separately compounded active-return portfolio. Backtest results depend on the data vintage, signal timing, execution assumptions, and cost model.
 
-## 文件结构
+The earlier *course-report version* uses a different end date and reports different outcomes (2010–2025; 3.26% annualized excess return and 3.55% tracking error). Results from these versions must not be interchanged.
 
-```text
-csi300-index-enhancement/
-├── README.md
-├── requirements.txt
-├── .gitignore
-├── 代码/
-│   ├── 指数增强策略.ipynb
-│   ├── 沪深300指数增强回测代码.py
-│   ├── 指数增强策略.html
-│   └── 输出/
-│       └── .gitkeep
-├── 实验报告/
-│   └── 基于动态因子筛选与分层抽样的沪深300指数增强策略研究报告.pdf
-└── 数据/
-    └── README.md
-```
+## Research question and methodology
 
-| 文件或目录 | 内容 |
-|---|---|
-| [研究笔记本](代码/指数增强策略.ipynb) | 完整研究流程，包含历史执行输出、绩效摘要及图表 |
-| [交易回测代码](代码/沪深300指数增强回测代码.py) | 聚宽交易执行脚本，内嵌历史目标持仓，不重新计算因子 |
-| [HTML 导出](代码/指数增强策略.html) | 笔记本导出版本，可下载后在浏览器中查看 |
-| [研究报告](实验报告/基于动态因子筛选与分层抽样的沪深300指数增强策略研究报告.pdf) | 方法、实证结果、局限与参考文献 |
-| [输出目录](代码/输出/) | 预留的结果归档位置；当前不包含独立 CSV 数据 |
-| [数据说明](数据/README.md) | 数据来源、处理流程与数据获取限制 |
+The project evaluates a practical trade-off: can an index-aware portfolio capture time-varying cross-sectional return signals without taking excessive active risk against the benchmark?
 
-## 历史回测结果
+1. **Investment universe.** Retrieve historical CSI 300 constituents at each monthly rebalancing date and apply eligibility/tradability filters.
+2. **Factor engineering.** Examine valuation, profitability, earnings growth, technical/return-based signals, volatility, liquidity, and size.
+3. **Cross-sectional preprocessing.** Handle missing observations, mitigate outliers using median absolute deviation (MAD), standardize factor values, neutralize selected industry and size effects, and apply symmetric (Löwdin) orthogonalization to reduce factor collinearity.
+4. **Dynamic factor selection.** Evaluate relationships between factor ranks and next-period stock returns with rolling Spearman rank information coefficients (Rank ICs). Use rolling IC information ratios (ICIRs), signal-direction consistency, and historical observations to select and weight factors.
+5. **Portfolio construction.** Rank eligible securities by their composite factor scores, select high-ranked stocks within industry × market-cap strata, and allocate approximately benchmark-consistent stratum weights. Incorporate position/turnover controls.
+6. **Evaluation.** Compare monthly portfolio and benchmark returns using active return, tracking error, information ratio, drawdown, win rate, and turnover. A separate JoinQuant transaction simulation applies stored historical target weights.
 
-下表来自已上传笔记本的保存输出，为原研究的历史记录，未在本次仓库整理中重新运行验证。
+This is a **stratified-sampling approach**, not a claim to have implemented a fully specified commercial multi-factor risk optimizer.
 
-| 研究端指标 | 历史记录 |
-|---|---:|
-| 策略年化收益 | 6.58% |
-| 基准年化收益 | 2.62% |
-| 年化超额收益 | 3.95% |
-| 年化跟踪误差 | 3.82% |
-| 信息比率 | 0.99 |
-| 策略最大回撤 | -38.95% |
-| 超额最大回撤 | -4.05% |
-| 月度胜率 | 64.29% |
-| 月均换手率 | 22.64% |
+## Repository guide
 
-年化超额收益采用策略与基准年化收益之差；展示值分别四舍五入。完整结果及计算方式见笔记本。
+| Resource | Description |
+|:--|:--|
+| [Research notebook](notebooks/index_enhancement_research.ipynb) | Main research implementation and stored notebook outputs |
+| [Notebook HTML](notebooks/index_enhancement_research.html) | Static export for convenient viewing without executing code |
+| [Trading backtest](src/joinquant_execution_backtest.py) | JoinQuant execution script; decodes embedded historical target weights rather than rebuilding signals |
+| [Research overview](docs/research_overview.md) | Extended English account of methodology, findings, version differences, and limitations |
+| [Data notes](data/README.md) | Data provenance, generated-file inventory, and access limitations |
+| [Dependencies](requirements.txt) | General Python dependencies; not an environment lockfile |
 
-| 回测类型 | 原报告记录区间 | 用途 |
-|---|---|---|
-| 研究端月度回测 | 2010-01-29 至 2026-06-15 | 分析因子与组合表现 |
-| 聚宽交易验证 | 2015-01-05 至 2026-06-15 | 检查交易约束及交易成本影响 |
+## Reproducibility and environment
 
-两类回测的区间、成交假设与成本处理不同，应分别解读。精确收益序列的起止日期以实际运行输出为准。
+The research notebook was developed in the **JoinQuant research environment**, using platform-provided `jqdata` and `jqfactor` APIs. Market data and fundamentals require the relevant JoinQuant account permissions. Installing the packages in `requirements.txt` does not reproduce the full platform environment or grant a data license.
 
-## 运行环境与复现
+To explore the project:
 
-研究笔记本依赖聚宽平台中的 `jqdata`、`jqfactor` 及相关接口。通用 Python 依赖见 [requirements.txt](requirements.txt)；原环境的软件包版本未记录，该文件不是经过验证的版本锁定清单。
+1. Open the [HTML notebook](notebooks/index_enhancement_research.html) to inspect the saved analytical workflow and figures.
+2. To rerun, load the [Jupyter notebook](notebooks/index_enhancement_research.ipynb) in an appropriately authorized JoinQuant environment; check factor definitions, historical index membership, availability dates, and the rebalancing convention.
+3. Regenerate factor scores and target portfolio weights in the research environment.
+4. Run the [execution backtest](src/joinquant_execution_backtest.py) in the JoinQuant backtesting environment **only after updating its embedded target weights** to match any revised research run.
+5. Verify signal/transaction timing before interpreting simulated returns.
 
-1. 在具备相应数据权限的聚宽研究环境中打开研究笔记本。
-2. 检查样本区间、调仓频率、因子筛选参数与缓存设置。
-3. 按顺序运行各单元，生成因子评分、目标权重和月度绩效。
-4. 在聚宽回测环境中运行交易脚本。当前脚本直接解码内嵌的历史目标权重；改变研究参数或样本区间后，须同步更新其输入，不能直接沿用旧权重。
-5. 核对信号可获得时间与成交时间，再比较研究端结果和交易端结果。
+The original dependency versions were not recorded, and an end-to-end reproduction on a fresh environment has not been demonstrated.
 
-笔记本的 CSV 默认写入执行环境的当前工作目录，不会自动保存到仓库的 `代码/输出/`。
+## Important methodological limitations
 
-本地 `jqdatasdk` 提供另一种数据访问方式，不能通过简单替换导入语句完整替代聚宽研究和回测环境。参见 [官方 JQData SDK](https://github.com/JoinQuant/jqdatasdk)。
+- **Potential look-ahead bias:** A prior execution configuration trades around 10:00 on the signal date even though parts of the research workflow use same-day closing information. Results require revalidation with properly lagged signals.
+- **Fundamental-data timing:** Not every financial field was independently lagged to its actual public disclosure date. Point-in-time fidelity needs additional auditing.
+- **Portfolio constraints:** Certain fallback normalization paths may relax the intended individual-name cap when strict feasibility is not attained.
+- **Trading realism:** Simplified research-side transaction-cost and turnover assumptions differ from the execution simulator's fills and costs.
+- **Out-of-sample testing:** Dividing historical results by calendar period is not equivalent to a fully independent out-of-sample evaluation; model selection and robustness still require testing.
+- **External data:** The repository does not redistribute underlying licensed price/fundamental datasets. Embedded historical weights are not a substitute for the original factor database.
 
-数据获取受账号权限、历史覆盖范围、调用额度及平台服务条件限制。安装 Python 依赖不代表已经获得数据访问权限。
+## Research context
 
-## 数据与参考资料
+The methods are informed by public literature on factor investing, active portfolio management, symmetric orthogonalization, and index-enhancement approaches, including 2018 research publications from Tianfeng Securities and Huatai Securities. These third-party reports are referenced for research context, not reproduced in this repository.
 
-仓库不提供完整原始行情和财务数据库。笔记本及 HTML 保留历史结果和部分数据预览，交易脚本包含编码后的历史目标持仓；这些内容不构成对底层数据再分发权利的授予。
-
-完整因子面板和独立收益序列需在自己的授权环境中重新生成。券商研报作为报告中的参考文献列示，仓库不附研报原文。
-
-## 研究局限
-
-- **信号时点**：原交易脚本在信号日期当天 10:00 执行，而研究流程部分输入使用当日收盘信息，存在前视风险；历史交易结果需在完成时点对齐后重新验证。
-- **财务数据时点**：原研究未对全部财务指标额外实施公告日滞后调整。
-- **约束可行性**：研究端个股上限在约束不可行时会退化为上限归一化，不能视为所有时期均严格满足权重上限。
-- **成本和执行**：研究端使用简化换手与成本处理，与交易平台成交模拟存在差异。
-- **样本外检验**：按年份划分绩效区间不等于完成严格的样本外验证，参数选择与独立检验仍需进一步核查。
-
-本项目用于量化研究与方法展示。历史回测表现不代表未来收益。
+**Purpose:** Academic research and portfolio construction demonstration. Historical simulated performance does not guarantee future results and should not be interpreted as investment advice.
